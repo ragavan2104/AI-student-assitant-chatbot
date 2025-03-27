@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College ChatBot</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+        }
+        .chat-icon {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background-color: #0078d7;
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+        .chat-icon:hover {
+            transform: scale(1.1);
+        }
+        .chat-container {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 0;
+            height: 0;
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease, height 0.3s ease;
+            z-index: 999;
+        }
+        .chat-container.open {
+            width: 400px;
+            height: 70vh;
+        }
+        .chat-header {
+            background-color: #202123;
+            color: #fff;
+            padding: 15px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .chat-container.open .chat-header {
+            opacity: 1;
+        }
+        .chat-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+            border-bottom: 1px solid #e0e0e0;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .chat-container.open .chat-body {
+            opacity: 1;
+        }
+        .chat-footer {
+            display: flex;
+            padding: 15px;
+            background-color: #fff;
+            border-top: 1px solid #e0e0e0;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .chat-container.open .chat-footer {
+            opacity: 1;
+        }
+        .chat-footer input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            outline: none;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        .chat-footer button {
+            padding: 12px 20px;
+            background-color: #0078d7;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .chat-footer button:hover {
+            background-color: #005bb5;
+        }
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+        .message.user {
+            justify-content: flex-end;
+        }
+        .message.ai {
+            justify-content: flex-start;
+        }
+        .message p {
+            display: inline-block;
+            padding: 12px 16px;
+            border-radius: 12px;
+            max-width: 70%;
+            font-size: 16px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+        .message.user p {
+            background-color: #0078d7;
+            color: #fff;
+            border-radius: 12px 12px 0 12px;
+            text-align: left;
+        }
+        .message.ai p {
+            background-color: #e0e0e0;
+            color: #333;
+            border-radius: 12px 12px 12px 0;
+            text-align: left;
+        }
+        .message.ai p::before {
+            content: "🤖";
+            margin-right: 8px;
+        }
+        .message.user p::before {
+            content: "👤";
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-icon" onclick="toggleChat()">
+        💬
+    </div>
+    <div class="chat-container" id="chat-container">
+        <div class="chat-header">
+            College ChatBot
+        </div>
+        <div class="chat-body" id="chat-body">
+            <div class="message ai">
+                <p>Welcome to the College chatbot! How can I assist you today?</p>
+            </div>
+        </div>
+        <div class="chat-footer">
+            <input type="text" id="user-input" placeholder="Type your message...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        function toggleChat() {
+            const chatContainer = document.getElementById('chat-container');
+            chatContainer.classList.toggle('open');
+        }
+
+        async function sendMessage() {
+            const userInput = document.getElementById('user-input').value;
+            if (!userInput) return;
+
+            // Add user message to chat
+            const chatBody = document.getElementById('chat-body');
+            chatBody.innerHTML += `
+                <div class="message user">
+                    <p>${userInput}</p>
+                </div>
+            `;
+
+            // Clear input
+            document.getElementById('user-input').value = '';
+
+            // Send message to backend
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: userInput }),
+                });
+                const data = await response.json();
+
+                // Add AI response to chat
+                chatBody.innerHTML += `
+                    <div class="message ai">
+                        <p>${data.response}</p>
+                    </div>
+                `;
+
+                // Scroll to bottom
+                chatBody.scrollTop = chatBody.scrollHeight;
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
